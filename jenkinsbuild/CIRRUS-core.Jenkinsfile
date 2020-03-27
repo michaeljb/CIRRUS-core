@@ -8,42 +8,40 @@ pipeline {
     string(name: 'DEPLOY_NAME', defaultValue: 'asf', description: 'The name of the stack for this MATURITY')
   }
 
+  // Default values for DEV MATURITY
+  environment {
+    AWS_CREDS_ID = "asf-cumulus-core-sandbox"
+    AWS_REGION = "us-east-1"
+    CHATHOST = "https://chat.asf.alaska.edu/hooks/dm8kzc8rxpr57xkt9w6tnfaasr"
+    CHAT_ROOM = "RAIN"
+    CMR_CREDS_ID = "asf-cumulus-core-cmr_creds_UAT"
+    URS_CREDS_ID = "asf-cumulus-core-urs_creds_UAT"
+    TOKEN_SECRET_ID = "asf-cumulus-core-token-sandbox"
+    DAAC_REPO = "git@github.com:asfadmin/asf-cumulus-core.git"
+    DAAC_REF = "master"
+  }
+
   stages {
-    stage('DEV Settings') {
-      when { equals expected: "DEV", actual: params.MATURITY }
-
-      environment {
-        AWS_CREDS_ID = "asf-cumulus-core-sandbox"
-        AWS_REGION = "us-east-1"
-        CHATHOST = "https://chat.asf.alaska.edu/hooks/dm8kzc8rxpr57xkt9w6tnfaasr"
-        CHAT_ROOM = "RAIN"
-        CMR_CREDS_ID = "asf-cumulus-core-cmr_creds_UAT"
-        URS_CREDS_ID = "asf-cumulus-core-urs_creds_UAT"
-        TOKEN_SECRET_ID = "asf-cumulus-core-token-sandbox"
-        DAAC_REPO = "git@github.com:asfadmin/asf-cumulus-core.git"
-        DAAC_REF = "master"
+    stage('Set Environment for MATURITY') {
+      steps {
+        script {
+          if (params.MATURITY == 'INT') {
+            AWS_CREDS_ID = "asf-cumulus-core-sit"
+            AWS_REGION = "us-east-1"
+            CHATHOST = "https://chat.asf.alaska.edu/hooks/dm8kzc8rxpr57xkt9w6tnfaasr"
+            CHAT_ROOM = "RAIN"
+            CMR_CREDS_ID = "cmr-creds-uat"
+            URS_CREDS_ID = "urs-creds-uat"
+            TOKEN_SECRET_ID = "asf-cumulus-core-token-sit"
+            DAAC_REPO = "git@github.com:asfadmin/asf-cumulus-core.git"
+            DAAC_REF = "master"
+          } else if (params.MATURITY == 'TEST') {
+            echo "TODO: Define ENV values for TEST"
+          } else if (params.MATURITY == 'PROD') {
+            echo "TODO: Define ENV values for PROD"
+          }
+        }
       }
-    }
-    stage('INT Settings') {
-      when { equals expected: "INT", actual: params.MATURITY }
-
-      environment {
-        AWS_CREDS_ID = "asf-cumulus-core-sit"
-        AWS_REGION = "us-east-1"
-        CHATHOST = "https://chat.asf.alaska.edu/hooks/dm8kzc8rxpr57xkt9w6tnfaasr"
-        CHAT_ROOM = "RAIN"
-        CMR_CREDS_ID = "cmr-creds-uat"
-        URS_CREDS_ID = "urs-creds-uat"
-        TOKEN_SECRET_ID = "asf-cumulus-core-token-sit"
-        DAAC_REPO = "git@github.com:asfadmin/asf-cumulus-core.git"
-        DAAC_REF = "master"
-      }
-    }
-    stage('TEST Settings') {
-      when { equals expected: "TEST", actual: params.MATURITY }
-    }
-    stage('PROD Settings') {
-      when { equals expected: "PROD", actual: params.MATURITY }
     }
 
     stage('Start Cumulus Deployment') {
