@@ -12,28 +12,32 @@ pipeline {
     stage('DEV Settings') {
       when { equals expected: "DEV", actual: params.MATURITY }
 
-      params.AWS_CREDS_ID = "asf-cumulus-core-sandbox"
-      params.AWS_REGION = "us-east-1"
-      params.CHATHOST = "https://chat.asf.alaska.edu/hooks/dm8kzc8rxpr57xkt9w6tnfaasr"
-      params.CHAT_ROOM = "RAIN"
-      params.CMR_CREDS_ID = "asf-cumulus-core-cmr_creds_UAT"
-      params.URS_CREDS_ID = "asf-cumulus-core-urs_creds_UAT"
-      params.TOKEN_SECRET_ID = "asf-cumulus-core-token-sandbox"
-      params.DAAC_REPO = "git@github.com:asfadmin/asf-cumulus-core.git"
-      params.DAAC_REF = "master"
+      environment {
+        AWS_CREDS_ID = "asf-cumulus-core-sandbox"
+        AWS_REGION = "us-east-1"
+        CHATHOST = "https://chat.asf.alaska.edu/hooks/dm8kzc8rxpr57xkt9w6tnfaasr"
+        CHAT_ROOM = "RAIN"
+        CMR_CREDS_ID = "asf-cumulus-core-cmr_creds_UAT"
+        URS_CREDS_ID = "asf-cumulus-core-urs_creds_UAT"
+        TOKEN_SECRET_ID = "asf-cumulus-core-token-sandbox"
+        DAAC_REPO = "git@github.com:asfadmin/asf-cumulus-core.git"
+        DAAC_REF = "master"
+      }
     }
     stage('INT Settings') {
       when { equals expected: "INT", actual: params.MATURITY }
 
-      params.AWS_CREDS_ID = "asf-cumulus-core-sit"
-      params.AWS_REGION = "us-east-1"
-      params.CHATHOST = "https://chat.asf.alaska.edu/hooks/dm8kzc8rxpr57xkt9w6tnfaasr"
-      params.CHAT_ROOM = "RAIN"
-      params.CMR_CREDS_ID = "cmr-creds-uat"
-      params.URS_CREDS_ID = "urs-creds-uat"
-      params.TOKEN_SECRET_ID = "asf-cumulus-core-token-sit"
-      params.DAAC_REPO = "git@github.com:asfadmin/asf-cumulus-core.git"
-      params.DAAC_REF = "master"
+      environment {
+        AWS_CREDS_ID = "asf-cumulus-core-sit"
+        AWS_REGION = "us-east-1"
+        CHATHOST = "https://chat.asf.alaska.edu/hooks/dm8kzc8rxpr57xkt9w6tnfaasr"
+        CHAT_ROOM = "RAIN"
+        CMR_CREDS_ID = "cmr-creds-uat"
+        URS_CREDS_ID = "urs-creds-uat"
+        TOKEN_SECRET_ID = "asf-cumulus-core-token-sit"
+        DAAC_REPO = "git@github.com:asfadmin/asf-cumulus-core.git"
+        DAAC_REF = "master"
+      }
     }
     stage('TEST Settings') {
       when { equals expected: "TEST", actual: params.MATURITY }
@@ -45,15 +49,15 @@ pipeline {
     stage('Start Cumulus Deployment') {
       steps {
         // Send chat notification
-        mattermostSend channel: "${CHAT_ROOM}", color: '#EAEA5C', endpoint: "${params.CHATHOST}", message: "Build started: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>). See (<{$env.RUN_CHANGES_DISPLAY_URL}|Changes>)."
+        mattermostSend channel: "${CHAT_ROOM}", color: '#EAEA5C', endpoint: "${CHATHOST}", message: "Build started: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>). See (<{$env.RUN_CHANGES_DISPLAY_URL}|Changes>)."
       }
     }
 
     stage('Clone and checkout DAAC repo/ref') {
       steps {
         sh "cd ${WORKSPACE}"
-        sh "if [ ! -d \"daac-repo\" ]; then git clone ${params.DAAC_REPO} daac-repo; fi"
-        sh "cd daac-repo && git fetch && git checkout ${params.DAAC_REF} && git pull && cd .."
+        sh "if [ ! -d \"daac-repo\" ]; then git clone ${DAAC_REPO} daac-repo; fi"
+        sh "cd daac-repo && git fetch && git checkout ${DAAC_REF} && git pull && cd .."
         sh 'tree'
       }
     }
@@ -66,12 +70,12 @@ pipeline {
     }
     stage('Deploy Cumulus within CIRRUS deploy Docker container') {
       environment {
-        CMR_CREDS = credentials("${params.CMR_CREDS_ID}")
-        URS_CREDS = credentials("${params.URS_CREDS_ID}")
-        TOKEN_SECRET = credentials("${params.TOKEN_SECRET_ID}")
+        CMR_CREDS = credentials("${CMR_CREDS_ID}")
+        URS_CREDS = credentials("${URS_CREDS_ID}")
+        TOKEN_SECRET = credentials("${TOKEN_SECRET_ID}")
       }
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${params.AWS_CREDS_ID}"]])  {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDS_ID}"]])  {
 
             sh """docker run --rm   --user `id -u` \
                                     --env TF_VAR_cmr_username='${CMR_CREDS_USR}' \
@@ -83,9 +87,9 @@ pipeline {
                                     --env MATURITY_IN='${params.MATURITY}' \
                                     --env AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}' \
                                     --env AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}' \
-                                    --env AWS_REGION='${params.AWS_REGION}' \
-                                    --env DAAC_REPO='${params.DAAC_REPO}' \
-                                    --env DAAC_REF='${params.DAAC_REF}' \
+                                    --env AWS_REGION='${AWS_REGION}' \
+                                    --env DAAC_REPO='${DAAC_REPO}' \
+                                    --env DAAC_REF='${DAAC_REF}' \
                                     -v \"${WORKSPACE}\":/workspace \
                                     cirrusbuilder \
                                     /bin/bash /workspace/jenkinsbuild/cumulusbuilder.sh
@@ -101,7 +105,7 @@ pipeline {
       sh 'echo "done"'
     }
     success {
-      mattermostSend channel: "${CHAT_ROOM}", color: '#CEEBD3', endpoint: "${params..CHATHOST}", message: "Build Successful: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
+      mattermostSend channel: "${CHAT_ROOM}", color: '#CEEBD3', endpoint: "${CHATHOST}", message: "Build Successful: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
     }
     failure {
       sh "env"
@@ -109,7 +113,7 @@ pipeline {
       sh "cd \"${WORKSPACE}\""
       sh "tree"
 
-      mattermostSend channel: "${CHAT_ROOM}", color: '#FFBDBD', endpoint: "${params.CHATHOST}", message: "Build Failed:  🤬${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)🤬"
+      mattermostSend channel: "${CHAT_ROOM}", color: '#FFBDBD', endpoint: "${CHATHOST}", message: "Build Failed:  🤬${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)🤬"
 
     }
   }
