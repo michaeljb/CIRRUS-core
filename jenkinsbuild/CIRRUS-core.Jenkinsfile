@@ -29,7 +29,7 @@ pipeline {
             AWS_CREDS_ID = "asf-cumulus-core-sit"
             AWS_REGION = "us-east-1"
             CHATHOST = "https://chat.asf.alaska.edu/hooks/dm8kzc8rxpr57xkt9w6tnfaasr"
-            CHAT_ROOM = "RAIN"
+            CHAT_ROOM = "rain"
             CMR_CREDS_ID = "asf-cumulus-core-cmr_creds_UAT"
             URS_CREDS_ID = "asf-cumulus-core-urs_creds_UAT"
             TOKEN_SECRET_ID = "asf-cumulus-core-token-sit"
